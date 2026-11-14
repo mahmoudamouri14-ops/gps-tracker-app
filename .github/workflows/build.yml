@@ -46,6 +46,8 @@ jobs:
 
     - name: Build with Buildozer
       run: |
+        export MAKEOPTS="-j2"
+        export JOBS=2
         yes | buildozer -v android debug || (echo "=== BUILD FAILED, PRINTING LOGS ===" && find . -name "*.log" -exec cat {} + && exit 1)
 
     - name: Upload APK Artifact
