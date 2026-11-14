@@ -9,19 +9,20 @@ package.name = gpstracker
 # (str) Package domain (needed for android packaging)
 package.domain = org.gps
 
+# (str) Application version (مهم جداً: هذا هو السطر الذي كان ناقصاً)
+version = 0.1
+
 # (str) Source files to include (let it include python files and assets)
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 
 # (list) Application requirements
-# تأكد أن مكتبات الـ GPS والإنترنت موجودة هنا
 requirements = python3,kivy,plyer,requests,urllib3,idna,certifi,charset_normalizer
 
 # (str) Supported orientations
 orientation = portrait
 
 # (list) Permissions
-# صلاحيات الإنترنت والموقع الجغرافي الضرورية للـ GPS
 android.permissions = INTERNET,ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION
 
 # (int) Target Android API, should be as high as possible.
