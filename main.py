@@ -1,65 +1,126 @@
+import threading
+import time
 from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.label import Label
 from kivy.clock import Clock
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
 from plyer import gps
 import requests
 
-# ** استبدل هذا الرابط برابط سيرفرك السحابي الحقيقي لاحقاً **
-SERVER_URL = "https://your-app-name.onrender.com"
-
-class TrackerApp(App):
+class GPSTrackerApp(App):
     def build(self):
-        self.layout = BoxLayout(orientation='vertical', padding=25, spacing=20)
+        self.title = "GPS Tracker"
+        layout = BoxLayout(orientation='vertical', padding=25, spacing=15)
         
-        self.label = Label(text="اختر وضع التشغيل لتطبيق التتبع", font_size=18)
-        self.layout.add_widget(self.label)
+        # الحالة العامة
+        self.status_label = Label(text="الحالة: متوقف", font_size=18, size_hint_y=None, height=40)
+        layout.add_widget(self.status_label)
         
-        btn_send = Button(text="📡 أنا الجوال المرسل (إرسال موقعي)", background_color=(0, 0.7, 0, 1), font_size=16)
-        btn_send.bind(on_press=self.start_sending)
-        self.layout.add_widget(btn_send)
+        # عرض الإحداثيات الحالية
+        self.coord_label = Label(text="خط العرض: 0.0 | خط الطول: 0.0", font_size=18, size_hint_y=None, height=40)
+        layout.add_widget(self.coord_label)
         
-        btn_watch = Button(text="🗺️ أنا الجوال المستقبل (مراقبة الموقع)", background_color=(0, 0.4, 0.8, 1), font_size=16)
-        btn_watch.bind(on_press=self.start_watching)
-        self.layout.add_widget(btn_watch)
+        # رابط السيرفر السحابي (Firebase أو API مجاني)
+        layout.add_widget(Label(text="رابط السيرفر السحابي (Cloud URL):", size_hint_y=None, height=25))
+        self.url_input = TextInput(
+            text="https://your-database-name.firebaseio.com/location.json",
+            size_hint_y=None, height=45, multiline=False
+        )
+        layout.add_widget(self.url_input)
         
-        return self.layout
+        # معرف الجوال
+        layout.add_widget(Label(text="اسم أو رقم هذا الجوال:", size_hint_y=None, height=25))
+        self.device_input = TextInput(
+            text="phone_1",
+            size_hint_y=None, height=45, multiline=False
+        )
+        layout.add_widget(self.device_input)
+        
+        # زر البدء والإيقاف
+        self.toggle_btn = Button(text="بدء التتبع والإرسال", font_size=20, size_hint_y=None, height=60)
+        self.toggle_btn.bind(on_press=self.toggle_tracking)
+        layout.add_widget(self.toggle_btn)
+        
+        # حالة المزامنة السحابية
+        self.sync_label = Label(text="السيرفر: بانتظار الإرسال...", font_size=16, size_hint_y=None, height=40)
+        layout.add_widget(self.sync_label)
+        
+        self.tracking = False
+        self.lat = 0.0
+        self.lon = 0.0
+        
+        return layout
 
-    def start_sending(self, instance):
-        self.label.text = "جاري تفعيل الـ GPS وإرسال الموقع للسحابة..."
+    def toggle_tracking(self, instance):
+        if not self.tracking:
+            self.start_gps()
+            self.tracking = True
+            self.toggle_btn.text = "إيقاف التتبع"
+            self.status_label.text = "الحالة: جاري التتبع والإرسال..."
+        else:
+            self.stop_gps()
+            self.tracking = False
+            self.toggle_btn.text = "بدء التتبع والإرسال"
+            self.status_label.text = "الحالة: متوقف"
+            self.sync_label.text = "السيرفر: متوقف"
+
+    def start_gps(self):
         try:
-            gps.configure(on_location=self.on_gps_location)
-            gps.start(minTime=1000, minDistance=1)
-        except Exception:
-            self.label.text = "خطأ في تشغيل الـ GPS."
+            gps.configure(on_location=self.on_gps_location, on_status=self.on_gps_status)
+            gps.start(min_time=5000, min_distance=1)
+            self.status_label.text = "الحالة: تم تشغيل الـ GPS"
+        except NotImplementedError:
+            self.status_label.text = "الحالة: الـ GPS غير مدعوم على هذا الجهاز"
+
+    def stop_gps(self):
+        try:
+            gps.stop()
+        except:
+            pass
 
     def on_gps_location(self, **kwargs):
-        lat = kwargs.get('lat')
-        lon = kwargs.get('lon')
-        if lat and lon:
-            try:
-                requests.post(f"{SERVER_URL}/update", json={'lat': lat, 'lon': lon}, timeout=5)
-                self.label.text = f"تم الإرسال للسحابة:\nLat: {lat:.4f}\nLon: {lon:.4f}"
-            except Exception:
-                self.label.text = "فشل الاتصال بالسيرفر السحابي للإرسال."
+        self.lat = kwargs.get('lat', 0.0)
+        self.lon = kwargs.get('lon', 0.0)
+        
+        # تحديث الواجهة عبر مسار الرئيسي لـ Kivy
+        Clock.schedule_once(lambda dt: self.update_ui_coords(self.lat, self.lon))
+        
+        # إرسال الإحداثيات للسيرفر في الخلفية لكي لا يجمد التطبيق
+        t = threading.Thread(target=self.send_to_cloud, args=(self.lat, self.lon))
+        t.daemon = True
+        t.start()
 
-    def start_watching(self, instance):
-        self.label.text = "جاري الاتصال بالسحابة لمراقبة الموقع..."
-        Clock.schedule_interval(self.fetch_location_from_cloud, 3)
+    def update_ui_coords(self, lat, lon):
+        self.coord_label.text = f"خط العرض: {lat:.5f} | خط الطول: {lon:.5f}"
 
-    def fetch_location_from_cloud(self, dt):
+    def on_gps_status(self, convening, status):
+        pass
+
+    def send_to_cloud(self, lat, lon):
         try:
-            response = requests.get(f"{SERVER_URL}/get", timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                lat = data.get('lat')
-                lon = data.get('lon')
-                self.label.text = f"📍 موقع الجوال المرسل المستلم:\nLat: {lat}\nLon: {lon}"
+            base_url = self.url_input.text.strip()
+            device_id = self.device_input.text.strip()
+            if not base_url or "your-database-name" in base_url:
+                Clock.schedule_once(lambda dt: setattr(self.sync_label, 'text', 'خطأ: يرجى وضع رابط سيرفر حقيقي'))
+                return
+            
+            payload = {
+                "device": device_id,
+                "lat": lat,
+                "lon": lon,
+                "time": time.time()
+            }
+            
+            # إرسال البيانات عبر طلب PUT لسيرفر سحابي مجاني مثل Firebase
+            response = requests.put(base_url, json=payload, timeout=5)
+            if response.status_code == 200 or response.status_code == 204:
+                Clock.schedule_once(lambda dt: setattr(self.sync_label, 'text', 'السيرفر: تم إرسال الإحداثيات بنجاح ✅'))
             else:
-                self.label.text = "في انتظار تحديثات من السيرفر..."
-        except Exception:
-            self.label.text = "فشل الاتصال بالسيرفر السحابي للاستقبال."
+                Clock.schedule_once(lambda dt: setattr(self.sync_label, 'text', f'السيرفر: خطأ بالاتصال ({response.status_code})'))
+        except Exception as e:
+            Clock.schedule_once(lambda dt: setattr(self.sync_label, 'text', 'السيرفر: فشل الاتصال بالإنترنت ❌'))
 
 if __name__ == '__main__':
-    TrackerApp().run()
+    GPSTrackerApp().run()
