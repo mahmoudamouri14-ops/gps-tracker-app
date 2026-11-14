@@ -9,7 +9,7 @@ package.name = gpstracker
 # (str) Package domain (needed for android packaging)
 package.domain = org.gps
 
-# (str) Application version (مهم جداً: هذا هو السطر الذي كان ناقصاً)
+# (str) Application version
 version = 0.1
 
 # (str) Source files to include (let it include python files and assets)
@@ -17,7 +17,7 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 
 # (list) Application requirements
-requirements = python3,kivy,plyer,requests,urllib3,idna,certifi,charset_normalizer
+requirements = python3,kivy,plyer,requests
 
 # (str) Supported orientations
 orientation = portrait
