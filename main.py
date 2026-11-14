@@ -22,10 +22,10 @@ class GPSTrackerApp(App):
         self.coord_label = Label(text="خط العرض: 0.0 | خط الطول: 0.0", font_size=18, size_hint_y=None, height=40)
         layout.add_widget(self.coord_label)
         
-        # رابط السيرفر السحابي (Firebase أو API مجاني)
+        # رابط السيرفر السحابي (جاهز برابط قاعدة بياناتك)
         layout.add_widget(Label(text="رابط السيرفر السحابي (Cloud URL):", size_hint_y=None, height=25))
         self.url_input = TextInput(
-            text="https://your-database-name.firebaseio.com/location.json",
+            text="https://livetrackerapp-66257-default-rtdb.europe-west1.firebasedatabase.app/location.json",
             size_hint_y=None, height=45, multiline=False
         )
         layout.add_widget(self.url_input)
