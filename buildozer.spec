@@ -31,6 +31,9 @@ android.api = 33
 # (int) Minimum API your APK will support.
 android.minapi = 21
 
+# (str) Android NDK version (تم تحديد إصدار مستقر لكي لا يفشل البناء)
+android.ndk = 25b
+
 # (bool) Indicate whether the application is a game or not
 osx.python_version = 3
 osx.kivy_version = 1.9.1
