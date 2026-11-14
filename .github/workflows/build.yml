@@ -1,5 +1,57 @@
-- name: Build with Buildozer
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Enable i386 architecture and install dependencies
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          python3-dev \
+          libffi-dev \
+          libssl-dev \
+          zlib1g-dev \
+          openjdk-17-jdk \
+          unzip \
+          zip \
+          ant \
+          autoconf \
+          libtool \
+          pkg-config \
+          libc6:i386 \
+          libstdc++6:i386 \
+          zlib1g:i386
+
+    - name: Install Buildozer and Cython
+      run: |
+        pip install --upgrade pip
+        pip install cython==0.29.36 buildozer
+
+    - name: Build with Buildozer
       run: |
         export MAKEOPTS="-j2"
         export CYTHON_TRACE=0
         yes | buildozer android debug
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: package
+        path: bin/*.apk
