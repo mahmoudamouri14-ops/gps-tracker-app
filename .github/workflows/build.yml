@@ -48,7 +48,7 @@ jobs:
       run: |
         export MAKEOPTS="-j2"
         export JOBS=2
-        yes | buildozer android debug || (echo "=== BUILD FAILED - EXACT ERROR LOG ===" && tail -n 100 .buildozer/logs/buildozer.log 2>/dev/null || find . -name "*.log" -exec tail -n 50 {} + && exit 1)
+        yes | buildozer android debug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
