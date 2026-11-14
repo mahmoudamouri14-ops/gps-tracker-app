@@ -31,6 +31,7 @@ jobs:
           openjdk-17-jdk \
           unzip \
           zip \
+          ant \
           autoconf \
           libtool \
           pkg-config \
