@@ -45,10 +45,16 @@ jobs:
         pip install cython==0.29.36 buildozer
 
     - name: Build with Buildozer
+      shell: bash
       run: |
+        set -o pipefail
         export MAKEOPTS="-j2"
         export CYTHON_TRACE=0
-        yes | buildozer android debug | grep -v "\[DEBUG\]" || exit 1
+        yes | buildozer android debug > build_log.txt 2>&1 || { 
+          echo "=== BUILD FAILED. SEARCHING FOR ERRORS IN LOGS ==="; 
+          grep -i "error" build_log.txt || tail -n 50 build_log.txt; 
+          exit 1; 
+        }
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
