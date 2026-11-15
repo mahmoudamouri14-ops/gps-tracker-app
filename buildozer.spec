@@ -31,8 +31,11 @@ android.api = 33
 # (int) Minimum API your APK will support.
 android.minapi = 21
 
-# (str) Android NDK version (تم تحديد إصدار مستقر لكي لا يفشل البناء)
+# (str) Android NDK version
 android.ndk = 25b
+
+# (bool) Accept Android SDK licenses automatically (حل مشكلة التوقف)
+android.accept_sdk_license = True
 
 # (bool) Indicate whether the application is a game or not
 osx.python_version = 3
